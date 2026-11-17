@@ -154,6 +154,17 @@ def test_openapi_documents_error_responses() -> None:
         paths["/v1/chat"]["post"]["responses"]["429"]["headers"])
 
 
+def test_openapi_chat_schema_matches_real_body(pick: Picker) -> None:
+    """The 200 schema lists exactly the fields a real response has."""
+    pick(GOOD)
+    with make_client(StubClient(), docs_enabled=True) as client:
+        schema = client.get("/openapi.json").json()
+        body = chat(client).json()
+    model = schema["components"]["schemas"]["ChatResponse"]
+    assert set(model["properties"]) == set(model["required"]) == set(body)
+    assert set(body) == {"session_id", "answer"}
+
+
 def test_settings_errors_never_echo_secrets(
         monkeypatch: pytest.MonkeyPatch) -> None:
     """A missing setting must not print other loaded values (e.g. keys)."""
@@ -216,18 +227,15 @@ def test_delete_validates_session_id_length() -> None:
 
 # ---- happy path and guard -------------------------------------------------
 
-def test_chat_returns_guarded_answer_with_sources(pick: Picker) -> None:
-    """A clean answer passes through with its whitelisted sources."""
+def test_chat_returns_guarded_answer_only(pick: Picker) -> None:
+    """A clean answer passes through; sources/lead_intent/request_id hidden."""
     pick(GOOD)
     with make_client(StubClient()) as client:
         resp = chat(client)
     assert resp.status_code == 200
-    data = resp.json()
-    assert data["answer"] == CANNED[GOOD]
-    assert data["sources"] == ["https://trendwise.io/pricing"]
-    assert data["lead_intent"] is False
-    assert data["session_id"] == "s1"
-    assert data["request_id"] == resp.headers["X-Request-ID"]
+    assert resp.json() == {"session_id": "s1", "answer": CANNED[GOOD]}
+    # The request id is still sent, as a header.
+    assert resp.headers["X-Request-ID"]
 
 
 def test_guard_replaces_leaky_answer(pick: Picker) -> None:
@@ -238,17 +246,35 @@ def test_guard_replaces_leaky_answer(pick: Picker) -> None:
     assert resp.status_code == 200
     data = resp.json()
     assert data["answer"] == guard_fallback(settings())
-    assert data["sources"] == []
+    assert "sources" not in data  # hidden from the response
     assert FAKE_PRIVATE_IP not in resp.text
     assert "14-day" not in resp.text
 
 
-def test_lead_intent_flag(pick: Picker) -> None:
-    """Buying-intent messages set lead_intent."""
+class RecordingTracer:
+    """Collects the per-turn events the app traces."""
+
+    def __init__(self) -> None:
+        self.events: list[dict[str, Any]] = []
+
+    def record(self, event: dict[str, Any]) -> None:
+        """Store the event."""
+        self.events.append(event)
+
+
+def test_hidden_fields_are_still_traced(pick: Picker) -> None:
+    """lead_intent, sources and request_id are logged/traced, not returned."""
     pick(GOOD)
-    with make_client(StubClient()) as client:
+    tracer = RecordingTracer()
+    app = create_app(settings=settings(), client=StubClient(), pages=PAGES,
+                     tracer=tracer)
+    with TestClient(app) as client:
         resp = chat(client, message="Can I book a demo for my agency?")
-    assert resp.json()["lead_intent"] is True
+    event = tracer.events[-1]
+    assert set(resp.json()) == {"session_id", "answer"}
+    assert event["lead_intent"] is True
+    assert event["sources"] == ["https://trendwise.io/pricing"]
+    assert event["request_id"] == resp.headers["X-Request-ID"]
 
 
 @pytest.mark.parametrize(("message", "expected"), [

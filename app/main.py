@@ -166,14 +166,14 @@ def create_app(
                 "guard_blocked": result.guard_blocked,
                 "guard_violations": result.guard_violation_types,
                 "lead_intent": result.lead_intent,
+                # Whitelisted public page URLs only (guard-checked).
+                "sources": result.sources,
                 "prompt_tokens": usage.prompt_tokens if usage else None,
                 "cached_tokens": usage.cached_tokens if usage else None,
                 "completion_tokens": usage.completion_tokens if usage else None,
             })
             return ChatResponse(session_id=body.session_id,
-                                answer=result.answer, sources=result.sources,
-                                lead_intent=result.lead_intent,
-                                request_id=request_id)
+                                answer=result.answer)
         except ApiError as exc:
             event["status"] = exc.status
             raise

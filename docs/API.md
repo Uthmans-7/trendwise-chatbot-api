@@ -32,19 +32,18 @@ Response `200`:
 ```json
 {
   "session_id": "visitor-7f3c",
-  "answer": "The Professional plan is $399 per month ... Sources: https://trendwise.io/pricing",
-  "sources": ["https://trendwise.io/pricing"],
-  "lead_intent": false,
-  "request_id": "5f0c2b..."
+  "answer": "The Professional plan is $399 per month ... Sources: https://trendwise.io/pricing"
 }
 ```
 
 | Field | Meaning |
 | --- | --- |
-| `answer` | The guarded answer: exactly what the visitor should see. If the output guard blocked the model's answer, this is a safe "contact sales / book a demo" reply. |
-| `sources` | Public page URLs the answer cites, all from the corpus. Empty if the guard replaced the answer. |
-| `lead_intent` | `true` only for explicit intent in this message: asking for a demo, a quote, to be contacted or to talk to sales/someone, or sharing an email, name or company. Pricing or feature questions alone stay `false`. A v1 keyword heuristic; use it as a hint to start the lead flow. |
-| `request_id` | Also in the `X-Request-ID` header; quote it when reporting issues. |
+| `session_id` | Echo of the request's `session_id`. |
+| `answer` | The guarded answer: exactly what the visitor should see. If the output guard blocked the model's answer, this is a safe "contact sales / book a demo" reply. Cited page URLs appear in the text after "Sources:". |
+
+The request id is in the `X-Request-ID` response header; quote it when
+reporting issues. Cited sources and `lead_intent` are computed and logged
+per request (see below) but not returned.
 
 ### `DELETE /v1/chat/{session_id}`
 
@@ -117,7 +116,9 @@ Each request logs one JSON line:
 
 - `request_id`, `session_id`, message length, latency;
 - prompt, cached and completion tokens;
-- the guard result (blocked or not, and violation *types*), `lead_intent`;
+- the guard result (blocked or not, and violation *types*), `lead_intent`
+  (explicit demo / quote / contact / talk-to-sales intent, or the visitor
+  sharing an email, name or company) and the cited `sources`;
 - the error class, on failure.
 
 Message text and API keys are never logged. A `Tracer` hook receives the

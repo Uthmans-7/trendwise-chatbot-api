@@ -25,13 +25,14 @@ class ChatRequest(BaseModel):
 
 
 class ChatResponse(BaseModel):
-    """Successful ``POST /v1/chat`` response."""
+    """Successful ``POST /v1/chat`` response.
+
+    Sources and lead intent are computed and logged, not returned; the
+    request id is sent in the ``X-Request-ID`` header.
+    """
 
     session_id: str
     answer: str
-    sources: list[str]
-    lead_intent: bool
-    request_id: str
 
 
 class ErrorBody(BaseModel):
