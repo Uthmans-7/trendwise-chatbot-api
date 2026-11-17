@@ -22,3 +22,10 @@ services:
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
+    
+# Use the pre-created network on the shared server; never let Docker
+# auto-assign a subnet (it can collide with the office LAN).
+networks:
+  default:
+    name: trendwise-chatbot-api_default
+    external: true
