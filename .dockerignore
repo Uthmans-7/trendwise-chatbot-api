@@ -1,0 +1,7 @@
+# Allow-list: only what the image needs. .env, data/, tests, docs, .git and
+# .venv never enter the build context.
+*
+!pyproject.toml
+!uv.lock
+!app/
+app/**/__pycache__

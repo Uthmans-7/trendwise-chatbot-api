@@ -1,0 +1,29 @@
+# The chat API with the cleaned corpus mounted read-only.
+#
+#   CORPUS_DIR=/srv/trendwise/corpus/current docker compose up -d --build
+#
+# CORPUS_DIR here is the HOST folder holding the corpus; inside the container
+# it is always /app/data/clean. Secrets (CHAT_API_KEY, GROQ_API_KEY, ...) come
+# from .env on the host at runtime; they are never copied into the image.
+services:
+  chat-api:
+    build: .
+    image: trendwise-chat-api:latest
+    # Uses the image CMD (uvicorn --no-server-header: no "server" header).
+    env_file: .env
+    environment:
+      LLM_PROVIDER: ${LLM_PROVIDER:-groq}
+      # Container path of the mount below (overrides a host path in .env).
+      CORPUS_DIR: /app/data/clean
+      # Overrides .env: API docs are never served on staging/prod.
+      DOCS_ENABLED: "false"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ${CORPUS_DIR:-./data/clean}:/app/data/clean:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
