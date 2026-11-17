@@ -3,7 +3,8 @@
 .env.*
 !.env.example
 
-# Corpus and other generated data (mounted at runtime, never in git)
+# Local generated data (never in git). corpus/ IS tracked: it is the
+# reviewed, leak-checked website content the service ships with.
 data/
 
 # Python / tooling

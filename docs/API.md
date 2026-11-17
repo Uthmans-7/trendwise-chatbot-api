@@ -60,7 +60,8 @@ No authentication.
 ```
 
 If `corpus_loaded` is `false`, the service is up but `/v1/chat` returns
-`503` until a corpus is mounted. No model or provider information is
+`503` until a corpus is available (it ships in the image, so this means a
+misconfigured `CORPUS_DIR`). No model or provider information is
 exposed.
 
 ## Errors
@@ -131,7 +132,7 @@ Set these via environment or `.env` (see `.env.example`):
 | `CHAT_API_KEY` | yes | n/a |
 | `LLM_PROVIDER` | no | `groq` (or `openrouter`) |
 | `GROQ_API_KEY` or `OPENROUTER_API_KEY` | yes, for the chosen provider | n/a |
-| `CORPUS_DIR` | yes | `./data/clean`; `/app/data/clean` in the image |
+| `CORPUS_DIR` | no | the repo's `corpus/`; `/app/corpus` in the image (baked in) |
 | `LEAK_INTERNAL_PORTS`, `LEAK_INTERNAL_NAMES` | yes on staging/prod | n/a. Internal ports and storage / file names the output guard must block, comma-separated. They live only in the server's `.env`, never in git. Without them, only the generic checks (private IPs, loopback, canary) apply. |
 | `CHAT_MODEL` | no | `openai/gpt-oss-20b` |
 | `PUBLIC_BASE_URL` | no | `https://trendwise.io` (used in citations; unconfirmed) |

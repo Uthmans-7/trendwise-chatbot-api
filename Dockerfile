@@ -1,8 +1,8 @@
 # Chat API image: Python 3.12 slim, deps via uv, non-root, uvicorn on :8000.
 #
-# Contents: pyproject.toml, uv.lock, app/ only (see .dockerignore). No .env,
-# no corpus. The cleaned corpus is mounted read-only at runtime at
-# /app/data/clean (CORPUS_DIR), so a corpus update doesn't need a rebuild.
+# Contents: pyproject.toml, uv.lock, app/ and corpus/ only (see
+# .dockerignore). No .env. The cleaned corpus is baked in at /app/corpus;
+# CORPUS_DIR can still point at a mounted copy instead.
 FROM python:3.12-slim
 
 COPY --from=ghcr.io/astral-sh/uv:0.11.7 /uv /bin/uv
@@ -12,7 +12,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PROJECT_ENVIRONMENT=/app/.venv \
-    CORPUS_DIR=/app/data/clean \
+    CORPUS_DIR=/app/corpus \
     DOCS_ENABLED=false
 
 WORKDIR /app
@@ -22,9 +22,9 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project --no-default-groups
 
 COPY app/ ./app/
+COPY corpus/ ./corpus/
 
-RUN useradd --system --uid 10001 --no-create-home app \
-    && mkdir -p /app/data/clean
+RUN useradd --system --uid 10001 --no-create-home app
 USER app
 
 ENV PATH="/app/.venv/bin:$PATH"

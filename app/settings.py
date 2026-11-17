@@ -72,8 +72,9 @@ class AppSettings(BaseSettings):
     # Serve /docs and /openapi.json. Local development only; staging and
     # production must leave this false (docker-compose forces it off).
     docs_enabled: bool = False
-    # Cleaned corpus (Markdown pages from the ingestion tooling).
-    corpus_dir: Path = PROJECT_ROOT / "data" / "clean"
+    # Cleaned corpus (Markdown pages from the ingestion tooling). Ships in
+    # the repo and the image; override CORPUS_DIR to use another copy.
+    corpus_dir: Path = PROJECT_ROOT / "corpus"
 
     # ---- LLM provider -------------------------------------------------------
     llm_provider: Provider = "groq"

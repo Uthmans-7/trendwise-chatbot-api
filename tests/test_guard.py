@@ -10,7 +10,7 @@ import pytest
 from app.chat.guard import check_answer
 from app.chat.patterns import SYSTEM_PROMPT_CANARY
 from app.chat.prompt import Page, load_pages
-from app.settings import LeakSettings
+from app.settings import AppSettings, LeakSettings
 from tests.stub_client import FAKE_PRIVATE_IP
 
 PAGES = [
@@ -104,6 +104,15 @@ def test_leak_settings_parse_lists() -> None:
                         internal_names="bucket-a, ,file-b")
     assert leak.ports() == ["1234", "5678"]
     assert leak.names() == ["bucket-a", "file-b"]
+
+
+def test_default_corpus_dir_is_repo_corpus() -> None:
+    """Without CORPUS_DIR, the committed corpus/ (8 public pages) loads."""
+    corpus_dir = AppSettings.model_fields["corpus_dir"].default
+    assert corpus_dir == Path(__file__).resolve().parent.parent / "corpus"
+    pages = load_pages(corpus_dir)
+    assert len(pages) == 8
+    assert all(p.url.startswith("https://trendwise.io") for p in pages)
 
 
 def test_load_pages_reads_corpus_format(tmp_path: Path) -> None:
